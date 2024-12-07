@@ -17,6 +17,7 @@ export const TiltifyEventSource: EventSource = {
                 from: "Tiltify",
                 donationAmount: 4.2,
                 rewardId: null,
+                rewardName: "",
                 comment: "Thanks for the stream!",
                 pollOptionId: null,
                 challengeId: null,
@@ -37,7 +38,7 @@ export const TiltifyEventSource: EventSource = {
             activityFeed: {
                 icon: "fad fa-heart",
                 getMessage: (eventData: any) => {
-                    return `**${eventData.from}** donated **$${eventData.donationAmount}** to Tiltify${eventData.rewardId && eventData.rewardId !== -1 ? ` with reward *${eventData.rewardId}*` : ""}`;
+                    return `**${eventData.from}** donated **$${eventData.donationAmount}** to Tiltify${eventData.rewardName ? ` with reward *${eventData.rewardName}*` : eventData.rewardId && eventData.rewardId !== -1 ? ` with reward *${eventData.rewardId}*` : ""}`;
                 }
             }
         }

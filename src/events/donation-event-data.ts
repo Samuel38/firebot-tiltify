@@ -2,6 +2,7 @@ export type TiltifyDonationEventData = {
     from: string,
     donationAmount: number,
     rewardId: string,
+    rewardName: string,
     comment: string,
     pollOptionId: string,
     challengeId: string,

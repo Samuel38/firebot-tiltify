@@ -8,10 +8,11 @@ import {
     ScriptModules
 } from "@crowbartools/firebot-custom-scripts-types";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { JsonDB } from "node-json-db";
+import { JsonDB, Config as JsonDBConfig } from "node-json-db";
 import axios from "axios";
 
 import { TiltifyEventSource } from "./events/tiltify-event-source";
+import { TiltifyDonationEventData } from "./events/donation-event-data";
 import { TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID } from "./constants";
 
 import { TiltifyDonationFromVariable } from "./variables/donation-from";
@@ -163,6 +164,8 @@ class TiltifyIntegration
 
         const causeInfo = await getCause(token, campaignInfo.cause_id);
 
+        const rewardsInfo = await fetchRewards(token, campaignId);
+
         this.timeout = setInterval(async () => {
             let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
 
@@ -202,11 +205,12 @@ class TiltifyIntegration
 
                 lastDonationDate = donation.completed_at;
 
-                logger.info(`Donation from ${donation.donor_name} for $${donation.amount}. Reward: ${donation.reward_id}`);
-                eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, {
+                logger.info(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
+                let eventDetails: TiltifyDonationEventData = {
                     from: donation.donor_name,
-                    donationAmount: donation.amount.value,
+                    donationAmount: Number(donation.amount.value),
                     rewardId: donation.reward_id,
+                    rewardName: rewardsInfo.find(ri => ri.id == donation.reward_id)?.name ?? "" ,
                     comment: donation.donor_comment,
                     pollOptionId: donation.poll_option_id,
                     challengeId: donation.target_id,
@@ -220,7 +224,9 @@ class TiltifyIntegration
                         amountRaised: Number(campaignInfo?.amount_raised?.value ?? 0),
                         totalRaised: Number(campaignInfo?.total_amount_raised?.value ?? 0)
                     }
-                }, false);
+                };
+                logger.debug(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
+                eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, eventDetails, false);
 
                 ids.push(donation.id);
                 db.push(`/tiltify/${campaignId}/ids`, ids);
@@ -308,7 +314,7 @@ const script: Firebot.CustomScript = {
 
         logger.info(`Loading Tiltify integration...`);
 
-        db = new JsonDB("tiltify.json", true, false, "/");
+        db = new JsonDB(new JsonDBConfig("tiltify.json", true, false, "/"));
 
         integrationManager.registerIntegration(integrationConfig);
 
