@@ -8,7 +8,8 @@ import {
     ScriptModules
 } from "@crowbartools/firebot-custom-scripts-types";
 import { TypedEmitter } from "tiny-typed-emitter";
-import { JsonDB, Config as JsonDBConfig } from "node-json-db";
+import { JsonDB } from "node-json-db";
+//import { JsonDB, Config as JsonDBConfig } from "node-json-db";
 import axios from "axios";
 
 import { TiltifyEventSource } from "./events/tiltify-event-source";
@@ -165,6 +166,7 @@ class TiltifyIntegration
         const causeInfo = await getCause(token, campaignInfo.cause_id);
 
         const rewardsInfo = await fetchRewards(token, campaignId);
+        logger.debug("Tiltify rewards: ", rewardsInfo);
 
         this.timeout = setInterval(async () => {
             let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
@@ -181,7 +183,7 @@ class TiltifyIntegration
 
             let lastDonationDate: string;
             try {
-                lastDonationDate = db.getData(`/tiltify/${campaignId}/lastDonationDate`);
+                lastDonationDate = await db.getData(`/tiltify/${campaignId}/lastDonationDate`);
                 logger.debug("load: lastDonationDate", lastDonationDate);
             } catch (e) {
                 lastDonationDate = null;
@@ -189,7 +191,7 @@ class TiltifyIntegration
 
             let ids: string[] = [];
             try {
-                ids = db.getData(`/tiltify/${campaignId}/ids`);
+                ids = await db.getData(`/tiltify/${campaignId}/ids`);
             } catch (e) {
                 db.push(`/tiltify/${campaignId}/ids`, []);
             }
@@ -199,7 +201,7 @@ class TiltifyIntegration
             const sortedDonations = donations.sort((a, b) => Date.parse(a.completed_at) - Date.parse(b.completed_at));
 
             sortedDonations.forEach((donation) => {
-                if (db.getData(`/tiltify/${campaignId}/ids`).includes(donation.id)) {
+                if (ids.includes(donation.id)) {
                     return;
                 }
 
@@ -229,8 +231,8 @@ class TiltifyIntegration
                 eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, eventDetails, false);
 
                 ids.push(donation.id);
-                db.push(`/tiltify/${campaignId}/ids`, ids);
             });
+            db.push(`/tiltify/${campaignId}/ids`, ids);
 
             logger.debug("save: lastDonationDate", lastDonationDate);
             db.push(`/tiltify/${campaignId}/lastDonationDate`, lastDonationDate);
@@ -314,7 +316,9 @@ const script: Firebot.CustomScript = {
 
         logger.info(`Loading Tiltify integration...`);
 
-        db = new JsonDB(new JsonDBConfig("tiltify.json", true, false, "/"));
+        db = new JsonDB("tiltify.json", true, false, "/");
+        // db = new JsonDB(new JsonDBConfig("tiltify.json", true, false, "/"));
+        // Returns error "TS2459: Module '"node-json-db"' declares 'Config' locally, but it is not exported." not sure why
 
         integrationManager.registerIntegration(integrationConfig);
 
