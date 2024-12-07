@@ -43,6 +43,8 @@ import {
     getCampaignDonations,
     validateToken
 } from "./tiltify-remote";
+import { TiltifyCampaign } from "./types/campaign";
+import { TiltifyCampaignReward } from "./types/campaign-reward";
 
 const packageInfo = require("../package.json");
 
@@ -156,7 +158,7 @@ class TiltifyIntegration
             return;
         }
 
-        const campaignInfo = await getCampaign(token, campaignId);
+        let campaignInfo: TiltifyCampaign = await getCampaign(token, campaignId);
 
         if (campaignInfo?.cause_id == null || campaignInfo.cause_id === "") {
             this.emit("disconnected", integrationDefinition.id);
@@ -166,7 +168,7 @@ class TiltifyIntegration
 
         const causeInfo = await getCause(token, campaignInfo.cause_id);
 
-        const rewardsInfo = await fetchRewards(token, campaignId);
+        let rewardsInfo: TiltifyCampaignReward[] = await fetchRewards(token, campaignId);
         logger.debug("Tiltify rewards: ", rewardsInfo);
 
         this.timeout = setInterval(async () => {
@@ -201,19 +203,26 @@ class TiltifyIntegration
             const donations = await getCampaignDonations(token, campaignId, lastDonationDate);
             const sortedDonations = donations.sort((a, b) => Date.parse(a.completed_at) - Date.parse(b.completed_at));
 
-            sortedDonations.forEach((donation) => {
+            sortedDonations.forEach(async (donation) => {
                 if (ids.includes(donation.id)) {
                     return;
+                }
+                // A donation has happened. Reload campaign info to update collected amounts
+                campaignInfo = await getCampaign(token, campaignId);
+                // If we don't know the reward, reload rewards and retry. 
+                let matchingreward: TiltifyCampaignReward = rewardsInfo.find(ri => ri.id == donation.reward_id);
+                if(!matchingreward) {
+                    rewardsInfo = await fetchRewards(token, campaignId);
+                    matchingreward = rewardsInfo.find(ri => ri.id == donation.reward_id);
                 }
 
                 lastDonationDate = donation.completed_at;
 
-                logger.info(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
                 let eventDetails: TiltifyDonationEventData = {
                     from: donation.donor_name,
                     donationAmount: Number(donation.amount.value),
                     rewardId: donation.reward_id,
-                    rewardName: rewardsInfo.find(ri => ri.id == donation.reward_id)?.name ?? "" ,
+                    rewardName: matchingreward?.name ?? "",
                     comment: donation.donor_comment,
                     pollOptionId: donation.poll_option_id,
                     challengeId: donation.target_id,
@@ -228,6 +237,7 @@ class TiltifyIntegration
                         totalRaised: Number(campaignInfo?.total_amount_raised?.value ?? 0)
                     }
                 };
+                logger.info(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
                 logger.debug(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
                 eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, eventDetails, false);
 
