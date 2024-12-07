@@ -10,7 +10,7 @@
     "copy": "node ./scripts/copy-build.js",
     "test": "jest"
   },
-  "author": "zunderscore",
+  "author": "Alastor_",
   "license": "MIT",
   "devDependencies": {
     "@crowbartools/firebot-custom-scripts-types": "^5.60.1",
