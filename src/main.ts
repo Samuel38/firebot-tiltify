@@ -133,80 +133,104 @@ class TiltifyIntegration
     unlink() { }
 
     async connect(integrationData: IntegrationData) {
+        // Get the saved access token
         let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
-
+        // Check whether the token is still valid, and if needed, refresh it. 
         if (await validateToken(token) !== true) {
+            logger.debug("Tiltify : Token invalid. Refreshing token. ");
             token = await this.refreshToken();
         }
-
+        // If the refreshing fails, disconnect tiltify. 
         if (token == null || token === "") {
+            logger.debug("Tiltify : Refreshing token failed. Disconnecting Tiltify. ");
             this.emit("disconnected", integrationDefinition.id);
             this.connected = false;
             return;
         }
-
+        // Disconnect if the settings for the integration aren't valid. 
         if (integrationData.userSettings == null || integrationData.userSettings.campaignSettings == null) {
+            logger.debug("Tiltify : Integration settings invalid. Disconnecting Tiltify. ");
             this.emit("disconnected", integrationDefinition.id);
             this.connected = false;
             return;
         }
 
+        // Checking the campaign Id is present. 
         const campaignId = integrationData?.userSettings?.campaignSettings?.campaignId as string;
         if (campaignId == null || campaignId === "") {
+            logger.debug("Tiltify : No campaign Id. Disconnecting Tiltify. ");
             this.emit("disconnected", integrationDefinition.id);
             this.connected = false;
             return;
         }
 
+        // Populate information about the campaign. This is mandatory to have. If not, we have a problem. 
+        // This contains the money raised, so it will update
         let campaignInfo: TiltifyCampaign = await getCampaign(token, campaignId);
-
         if (campaignInfo?.cause_id == null || campaignInfo.cause_id === "") {
+            logger.debug(`Tiltify : information about campaign ${campaignId} couldn't be retrieved or are invalid. Disconnecting Tiltify. `);
             this.emit("disconnected", integrationDefinition.id);
             this.connected = false;
             return;
         }
 
+        // Populate info about the cause the campaign is collecting for. This should not change
         const causeInfo = await getCause(token, campaignInfo.cause_id);
 
+        // Populate info about the rewards offered. 
+        // This is gonna update to reflect the quantities available and offered and possible new rewards. 
         let rewardsInfo: TiltifyCampaignReward[] = await fetchRewards(token, campaignId);
-        logger.debug("Tiltify rewards: ", rewardsInfo);
+        logger.debug("Tiltify: Rewards: ", rewardsInfo.map((re) => `
+ID: ${re.id}
+Name: ${re.name}
+Amount: $${re.amount.value}
+Active: ${re.active}`).join("\n"));
 
+        // This is the loop that updates. We register it now, but it's gonna update asynchronously
         this.timeout = setInterval(async () => {
             let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
-
+            // Check whether the token is still valid, and if needed, refresh it. 
             if (await validateToken(token) !== true) {
+                logger.debug("Tiltify : Token invalid. Refreshing token. ");
                 token = await this.refreshToken();
             }
-
+            // If the refreshing fails, disconnect tiltify. 
             if (token == null || token === "") {
+                logger.debug("Tiltify : Refreshing token failed. Disconnecting Tiltify. ");
                 this.emit("disconnected", integrationDefinition.id);
                 this.connected = false;
                 return;
             }
 
+            // Load the last donation date if available
             let lastDonationDate: string;
             try {
                 lastDonationDate = await db.getData(`/tiltify/${campaignId}/lastDonationDate`);
-                logger.debug("load: lastDonationDate", lastDonationDate);
             } catch (e) {
+                logger.debug(`Tiltify : Couldn't find the last donation date in campaign ${campaignId}. `);
                 lastDonationDate = null;
             }
 
+            // Loading the IDs of known donations for this campaign
             let ids: string[] = [];
             try {
                 ids = await db.getData(`/tiltify/${campaignId}/ids`);
             } catch (e) {
+                logger.debug(`Tiltify : No donations saved for campaign ${campaignId}. Initializing database. `);
                 db.push(`/tiltify/${campaignId}/ids`, []);
             }
-            logger.debug("load: ids", ids);
 
+            // Acquire the donations since the last saved from Tiltify and sort them by date. 
             const donations = await getCampaignDonations(token, campaignId, lastDonationDate);
             const sortedDonations = donations.sort((a, b) => Date.parse(a.completed_at) - Date.parse(b.completed_at));
 
+            // Process each donation
             sortedDonations.forEach(async (donation) => {
+                // Don't process it if we already have registered it. 
                 if (ids.includes(donation.id)) {
                     return;
                 }
+
                 // A donation has happened. Reload campaign info to update collected amounts
                 campaignInfo = await getCampaign(token, campaignId);
                 // If we don't know the reward, reload rewards and retry. 
@@ -215,9 +239,12 @@ class TiltifyIntegration
                     rewardsInfo = await fetchRewards(token, campaignId);
                     matchingreward = rewardsInfo.find(ri => ri.id == donation.reward_id);
                 }
+                // FIXME : Rewards contain info about quantity remaining. We should update that when a donation comes in claiming a reward. 
 
+                // Update the last donation date to the current one. 
                 lastDonationDate = donation.completed_at;
 
+                // Extract the info to populate a Firebot donation event. 
                 let eventDetails: TiltifyDonationEventData = {
                     from: donation.donor_name,
                     donationAmount: Number(donation.amount.value),
@@ -237,35 +264,46 @@ class TiltifyIntegration
                         totalRaised: Number(campaignInfo?.total_amount_raised?.value ?? 0)
                     }
                 };
-                logger.info(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
-                logger.debug(`Donation from ${donation.donor_name} for $${donation.amount.value}. Reward: ${donation.reward_id}`);
+                logger.info(`Tiltify : 
+Donation from ${eventDetails.from} for $${eventDetails.donationAmount}. 
+Total raised : $${eventDetails.campaignInfo.amountRaised}
+Reward: ${eventDetails.rewardName ?? eventDetails.rewardId}
+Campaign : ${eventDetails.campaignInfo.name}
+Cause : ${eventDetails.campaignInfo.cause}`);
+                // Trigger the event
                 eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, eventDetails, false);
-
+                // Add the Id to the list of events processed
                 ids.push(donation.id);
             });
+            // Save the Ids of the events processed and the time of the last donation made
             db.push(`/tiltify/${campaignId}/ids`, ids);
-
-            logger.debug("save: lastDonationDate", lastDonationDate);
             db.push(`/tiltify/${campaignId}/lastDonationDate`, lastDonationDate);
 
         }, (integrationData.userSettings.integrationSettings.pollInterval as number) * 1000);
 
+        // We are now connected
         this.emit("connected", integrationDefinition.id);
         this.connected = true;
     }
 
+    // Disconnect the Integration
     disconnect() {
+        // Clear the event processing loop
         if (this.timeout) {
             clearInterval(this.timeout);
         }
+        // Disconnect
         this.connected = false;
         this.emit("disconnected", integrationDefinition.id);
     }
 
+    // Update the user settings
     onUserSettingsUpdate(integrationData: IntegrationData) {
+        // If we're connected, disconnect
         if (this.connected) {
             this.disconnect();
         }
+        // Reconnect
         this.connect(integrationData);
     }
 
