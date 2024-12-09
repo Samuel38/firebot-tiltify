@@ -15,7 +15,12 @@ import { getPathInData } from "./data-access";
 
 import { TiltifyEventSource } from "./events/tiltify-event-source";
 import { TiltifyDonationEventData } from "./events/donation-event-data";
-import { TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID } from "./constants";
+import { TiltifyMilestoneReachedEventData } from "./events/milestone-reached-event-data";
+import { 
+    TILTIFY_EVENT_SOURCE_ID, 
+    TILTIFY_DONATION_EVENT_ID, 
+    TILTIFY_MILESTONE_EVENT_ID 
+} from "./constants";
 
 import { TiltifyDonationFromVariable } from "./variables/donation-from";
 import { TiltifyDonationAmountVariable } from "./variables/donation-amount";
@@ -41,10 +46,13 @@ import {
     getCampaign,
     getCause,
     getCampaignDonations,
-    validateToken
+    validateToken,
+    getMilestones
 } from "./tiltify-remote";
+
 import { TiltifyCampaign } from "./types/campaign";
 import { TiltifyCampaignReward } from "./types/campaign-reward";
+import { TiltifyMilestone } from "./types/milestone";
 
 const packageInfo = require("../package.json");
 
@@ -180,11 +188,47 @@ class TiltifyIntegration
         // Populate info about the rewards offered. 
         // This is gonna update to reflect the quantities available and offered and possible new rewards. 
         let rewardsInfo: TiltifyCampaignReward[] = await fetchRewards(token, campaignId);
-        logger.debug("Tiltify: Rewards: ", rewardsInfo.map((re) => `
+        logger.debug("Tiltify: Campaign Rewards: ", rewardsInfo.map((re) => `
 ID: ${re.id}
 Name: ${re.name}
 Amount: $${re.amount.value}
 Active: ${re.active}`).join("\n"));
+
+        // Populate info about the Milestones. 
+        // This is gonna update to reflect the activation and possible new Milestones. 
+        let milestonesInfo: TiltifyMilestone[] = await getMilestones(token, campaignId);
+        logger.debug("Tiltify: Campaign Milestones: ", milestonesInfo.map((mi) => `
+ID: ${mi.id}
+Name: ${mi.name}
+Amount: $${mi.amount.value}
+Active: ${mi.active}
+Reached: ${mi.reached}`).join("\n"));
+        // Load saved milestones if any
+        // They are saved to keep memory of which milestones have previously been reached so we know what events to trigger
+        let savedMilestones: TiltifyMilestone[]
+        try {
+            savedMilestones = await db.getData(`/tiltify/${campaignId}/milestones`);
+        } catch {
+            savedMilestones = [];
+        }
+
+        milestonesInfo.forEach((milestone: TiltifyMilestone) => {
+            // Check if loaded milestone has been reached
+            milestone.reached = Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value);
+            // Checked the saved value for the milestone
+            let savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id == milestone.id);
+            // If the milestone was unknown
+            if (!savedMilestone) {
+                // Set reached as false so the event triggers
+                milestone.reached = false;
+                logger.debug(`Tiltify: Campaign Milestone ${milestone.name} is new. `);
+            } else if (milestone.reached && !savedMilestone.reached) {
+                // If the saved milestone was unreached, we want to make sure that if it's currently reached, we trip the event too
+                milestone.reached = false;
+                logger.debug(`Tiltify: Campaign Milestone ${milestone.name} is has been reached while Tiltify was offline. Ensuring the event triggers. `);
+            }
+        });
+        db.push(`/tiltify/${campaignId}/milestones`, milestonesInfo);
 
         // This is the loop that updates. We register it now, but it's gonna update asynchronously
         this.timeout = setInterval(async () => {
@@ -225,6 +269,7 @@ Active: ${re.active}`).join("\n"));
             const sortedDonations = donations.sort((a, b) => Date.parse(a.completed_at) - Date.parse(b.completed_at));
 
             // Process each donation
+            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ? 
             sortedDonations.forEach(async (donation) => {
                 // Don't process it if we already have registered it. 
                 if (ids.includes(donation.id)) {
@@ -278,6 +323,66 @@ Cause : ${eventDetails.campaignInfo.cause}`);
             // Save the Ids of the events processed and the time of the last donation made
             db.push(`/tiltify/${campaignId}/ids`, ids);
             db.push(`/tiltify/${campaignId}/lastDonationDate`, lastDonationDate);
+
+            // Check for milestones reached
+            savedMilestones = await db.getData(`/tiltify/${campaignId}/milestones`);
+            let milestoneTriggered: boolean = false;
+            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ? 
+            savedMilestones.forEach( (milestone: TiltifyMilestone) =>{
+                // Check if milestone has been reached
+                if( !milestone.reached && Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value) ) {
+                    milestone.reached = true;
+                    milestoneTriggered = true;
+                    // Extract the info to populate a Firebot milestone event. 
+                    let eventDetails: TiltifyMilestoneReachedEventData = {
+                        id: milestone.id,
+                        name: milestone.name,
+                        amount: Number(milestone.amount.value),
+                        campaignInfo: {
+                            name: campaignInfo?.name,
+                            cause: causeInfo?.name,
+                            causeLegalName: causeInfo?.name,
+                            fundraisingGoal: Number(campaignInfo?.goal?.value ?? 0),
+                            originalGoal: Number(campaignInfo?.original_goal?.value ?? 0),
+                            supportingRaised: Number(campaignInfo?.total_amount_raised?.value ?? 0) - Number(campaignInfo?.amount_raised?.value ?? 0),
+                            amountRaised: Number(campaignInfo?.amount_raised?.value ?? 0),
+                            totalRaised: Number(campaignInfo?.total_amount_raised?.value ?? 0)
+                        }
+                    };
+                    logger.info(`Tiltify : 
+Milestone ${eventDetails.name} reached. 
+Target amount : $${eventDetails.amount}
+Reached amount: $${eventDetails.campaignInfo.amountRaised}
+Campaign: ${eventDetails.campaignInfo.name}
+Cause: ${eventDetails.campaignInfo.cause}`);
+                    // Trigger the event
+                    eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_MILESTONE_EVENT_ID, eventDetails, false);
+                }
+            });
+            if ( milestoneTriggered ) {
+                // if we triggered a milestone, we want to reload the milestones from tiltify. 
+                milestonesInfo = await getMilestones(token, campaignId);
+                milestonesInfo.forEach((milestone: TiltifyMilestone) => {
+                    // Check if loaded milestone has been reached
+                    milestone.reached = Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value);
+                    // Checked the saved value for the milestone
+                    let savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id == milestone.id);
+                    // If the milestone was unknown
+                    if (!savedMilestone) {
+                        // Set reached as false so the event triggers
+                        milestone.reached = false;
+                        logger.debug(`Tiltify: Campaign Milestone ${milestone.name} is new. `);
+                    } else if (milestone.reached && !savedMilestone.reached) {
+                        // If the saved milestone was unreached, we want to make sure that if it's currently reached, we trip the event too
+                        milestone.reached = false;
+                        logger.debug(`Tiltify: Campaign Milestone ${milestone.name} has updated and isn't reached anymore. Ensuring the event triggers. `);
+                    }
+                });
+            } else {
+                milestonesInfo = savedMilestones
+            }
+            // Save the milestones
+            db.push(`/tiltify/${campaignId}/milestones`, milestonesInfo);
 
         }, (integrationData.userSettings.integrationSettings.pollInterval as number) * 1000);
 

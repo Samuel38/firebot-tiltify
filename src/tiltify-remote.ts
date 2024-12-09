@@ -8,6 +8,7 @@ import { TiltifyCampaignReward } from "./types/campaign-reward";
 import { TiltifyCause } from "./types/cause";
 import { TiltifyDonation } from "./types/donation";
 import { TiltifyPoll, TiltifyPollOption } from "./types/poll";
+import { TiltifyMilestone } from "./types/milestone";
 
 export async function validateToken(token: string): Promise<boolean> {
     try {
@@ -138,6 +139,27 @@ export async function fetchTargets(token: string, campaignId: string) {
             }
         });
         return response.data.data;
+    } catch (e) {
+        if (e.response) {
+            console.log(e.response?.data);
+        } else {
+            console.log("Unknown error");
+        }
+
+        return [];
+    }
+}
+
+export async function getMilestones(token: string, campaign_Id: string) : Promise<TiltifyMilestone[]> {
+    try {
+        const response = await axios.get<TiltifyApiResponse<TiltifyMilestone[]>>(
+            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaign_Id}/milestones`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+        return response.data.data;
+
     } catch (e) {
         if (e.response) {
             console.log(e.response?.data);
