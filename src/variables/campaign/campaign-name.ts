@@ -26,6 +26,6 @@ export const TiltifyCampaignNameVariable: ReplaceVariable = {
             eventData = trigger.metadata?.eventData as TiltifyDonationEventData;
         else if ( trigger.metadata.event.id == TILTIFY_MILESTONE_EVENT_ID )
             eventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
-        return eventData?.campaignInfo?.name ?? "";
+        return eventData?.campaignInfo?.name ?? "Unknown";
     }
 };
