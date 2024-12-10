@@ -1,4 +1,6 @@
-export type TiltifyDonationEventData = {
+import { TiltifyCampaignEventData } from "./campaign-event-data";
+
+export type TiltifyDonationEventData = TiltifyCampaignEventData & {
     from: string,
     donationAmount: number,
     rewardId: string,
@@ -6,14 +8,4 @@ export type TiltifyDonationEventData = {
     comment: string,
     pollOptionId: string,
     challengeId: string,
-    campaignInfo: {
-        name: string,
-        cause: string,
-        causeLegalName: string,
-        fundraisingGoal: number,
-        originalGoal: number,
-        supportingRaised: number,
-        amountRaised: number,
-        totalRaised: number,
-    }
 }
