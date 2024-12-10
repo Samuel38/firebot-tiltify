@@ -1,11 +1,12 @@
 import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
+import { OutputDataType } from "@shared/variable-constants";
 import {
     TILTIFY_EVENT_SOURCE_ID,
     TILTIFY_DONATION_EVENT_ID,
     TILTIFY_MILESTONE_EVENT_ID
-} from "../../constants";
-import { TiltifyDonationEventData } from "../../events/donation-event-data";
-import { TiltifyMilestoneReachedEventData } from "../../events/milestone-reached-event-data";
+} from "@/constants";
+import { TiltifyDonationEventData } from "@/events/donation-event-data";
+import { TiltifyMilestoneReachedEventData } from "@/events/milestone-reached-event-data";
 
 export const TiltifyCampaignRaisedVariable: ReplaceVariable = {
     definition: {
@@ -18,7 +19,8 @@ export const TiltifyCampaignRaisedVariable: ReplaceVariable = {
             ],
             "manual": true
         },
-        possibleDataOutput: ["number"]
+        //@ts-expect-error ts2322
+        possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
         let eventData: TiltifyDonationEventData | TiltifyMilestoneReachedEventData;

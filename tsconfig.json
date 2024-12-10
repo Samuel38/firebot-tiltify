@@ -8,7 +8,11 @@
         "sourceMap": true,
         "moduleResolution": "node",
         "experimentalDecorators": true,
-        "downlevelIteration": true
+        "downlevelIteration": true,
+        "paths":{
+            "@/*": ["./src/*"],
+            "@shared/*": ["./src/shared/*"],
+        } 
     },
     "include": ["./src/**/*"]
 }
