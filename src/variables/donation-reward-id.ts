@@ -3,6 +3,7 @@ import {
     TILTIFY_EVENT_SOURCE_ID,
     TILTIFY_DONATION_EVENT_ID
 } from "../constants";
+import { TiltifyDonationEventData } from "../events/donation-event-data";
 
 export const TiltifyDonationRewardIdVariable: ReplaceVariable = {
     definition: {
@@ -14,9 +15,10 @@ export const TiltifyDonationRewardIdVariable: ReplaceVariable = {
             ],
             "manual": true
         },
-        possibleDataOutput: ["number"]
+        possibleDataOutput: ["text"]
     },
-    evaluator: function (trigger) {
-        return trigger.metadata?.eventData?.rewardId ?? -1;
+    evaluator: function (trigger): string {
+        let eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        return eventData?.rewardId ?? "";
     }
 };
