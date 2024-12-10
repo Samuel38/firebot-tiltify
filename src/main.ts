@@ -11,7 +11,6 @@ import { TypedEmitter } from "tiny-typed-emitter";
 import { JsonDB } from "node-json-db";
 //import { JsonDB, Config as JsonDBConfig } from "node-json-db";
 import axios from "axios";
-import { getPathInData } from "./data-access";
 
 import { TiltifyEventSource } from "./events/tiltify-event-source";
 import { TiltifyDonationEventData } from "./events/donation-event-data";
@@ -459,8 +458,7 @@ const script: Firebot.CustomScript = {
         const { replaceVariableManager, frontendCommunicator, eventFilterManager } = modules;
 
         logger.info(`Loading Tiltify integration...`);
-        db = new JsonDB(getPathInData("tiltify.json"), true, false, "/");
-        // db = new JsonDB(new JsonDBConfig("tiltify.json", true, false, "/"));
+        db = new JsonDB(modules.path.join(SCRIPTS_DIR, '..', 'db', 'tiltify.db'), true, false, "/");
         // Returns error "TS2459: Module '"node-json-db"' declares 'Config' locally, but it is not exported." not sure why
 
         integrationManager.registerIntegration(integrationConfig);
