@@ -22,18 +22,20 @@ import {
     TILTIFY_MILESTONE_EVENT_ID 
 } from "./constants";
 
-import { TiltifyDonationFromVariable } from "./variables/donation-from";
-import { TiltifyDonationAmountVariable } from "./variables/donation-amount";
-import { TiltifyDonationRewardIdVariable } from "./variables/donation-reward-id";
-import { TiltifyDonationCommentVariable } from "./variables/donation-comment";
-import { TiltifyDonationCampaignNameVariable } from "./variables/donation-campaign-name";
-import { TiltifyDonationCampaignCauseVariable } from "./variables/donation-campaign-cause";
-import { TiltifyDonationCampaignCauseLegalVariable } from "./variables/donation-campaign-cause-legal";
-import { TiltifyDonationCampaignFundraisingGoalVariable } from "./variables/donation-campaign-fundraising-goal";
-import { TiltifyDonationCampaignOriginalGoalVariable } from "./variables/donation-campaign-original-goal";
-import { TiltifyDonationCampaignSupportingRaisedVariable } from "./variables/donation-campaign-supporting-raised";
-import { TiltifyDonationCampaignRaisedVariable } from "./variables/donation-campaign-raised";
-import { TiltifyDonationCampaignTotalRaisedVariable } from "./variables/donation-campaign-total-raised";
+import {
+    TiltifyDonationFromVariable,
+    TiltifyDonationAmountVariable,
+    TiltifyDonationRewardIdVariable,
+    TiltifyDonationCommentVariable,
+    TiltifyCampaignNameVariable,
+    TiltifyCampaignCauseVariable,
+    TiltifyCampaignCauseLegalVariable,
+    TiltifyCampaignGoalVariable,
+    TiltifyCampaignOriginalGoalVariable,
+    TiltifyCampaignSupportingRaisedVariable,
+    TiltifyCampaignRaisedVariable,
+    TiltifyCampaignTotalRaisedVariable
+} from "./variables";
 
 import { RewardFilter } from "./filters/reward-filter";
 import { PollOptionFilter } from "./filters/poll-option-filter";
@@ -481,14 +483,14 @@ const script: Firebot.CustomScript = {
         replaceVariableManager.registerReplaceVariable(TiltifyDonationAmountVariable);
         replaceVariableManager.registerReplaceVariable(TiltifyDonationRewardIdVariable);
         replaceVariableManager.registerReplaceVariable(TiltifyDonationCommentVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignNameVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignCauseVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignCauseLegalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignFundraisingGoalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignOriginalGoalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignSupportingRaisedVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignRaisedVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCampaignTotalRaisedVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignNameVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignCauseVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignCauseLegalVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignGoalVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignOriginalGoalVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignSupportingRaisedVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignRaisedVariable);
+        replaceVariableManager.registerReplaceVariable(TiltifyCampaignTotalRaisedVariable);
 
         eventFilterManager.registerFilter(RewardFilter);
         eventFilterManager.registerFilter(PollOptionFilter);

@@ -3,6 +3,7 @@ import {
     TILTIFY_EVENT_SOURCE_ID,
     TILTIFY_DONATION_EVENT_ID
 } from "../constants";
+import { TiltifyDonationEventData } from "../events/donation-event-data";
 
 export const TiltifyDonationAmountVariable: ReplaceVariable = {
     definition: {
@@ -16,7 +17,8 @@ export const TiltifyDonationAmountVariable: ReplaceVariable = {
         },
         possibleDataOutput: ["number"]
     },
-    evaluator: function (trigger) {
-        return trigger.metadata?.eventData?.donationAmount ?? 0;
+    evaluator: function (trigger): number {
+        let eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        return eventData?.donationAmount ?? 0;
     }
 };
