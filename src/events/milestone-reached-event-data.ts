@@ -1,15 +1,7 @@
-export type TiltifyMilestoneReachedEventData = {
+import { TiltifyCampaignEventData } from "./campaign-event-data";
+
+export type TiltifyMilestoneReachedEventData = TiltifyCampaignEventData & {
     id: string,
     name: string,
-    amount: number,
-    campaignInfo: {
-        name: string,
-        cause: string,
-        causeLegalName: string,
-        fundraisingGoal: number,
-        originalGoal: number,
-        supportingRaised: number,
-        amountRaised: number,
-        totalRaised: number,
-    }
+    amount: number
 }

@@ -5,8 +5,7 @@ import {
     TILTIFY_DONATION_EVENT_ID,
     TILTIFY_MILESTONE_EVENT_ID
 } from "@/constants";
-import { TiltifyDonationEventData } from "@/events/donation-event-data";
-import { TiltifyMilestoneReachedEventData } from "@/events/milestone-reached-event-data";
+import { TiltifyCampaignEventData } from "@/events/campaign-event-data";
 
 export const TiltifyCampaignGoalVariable: ReplaceVariable = {
     definition: {
@@ -23,11 +22,7 @@ export const TiltifyCampaignGoalVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        let eventData: TiltifyDonationEventData | TiltifyMilestoneReachedEventData;
-        if ( trigger.metadata.event.id == TILTIFY_DONATION_EVENT_ID ) 
-            eventData = trigger.metadata?.eventData as TiltifyDonationEventData;
-        else if ( trigger.metadata.event.id == TILTIFY_MILESTONE_EVENT_ID )
-            eventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
+        let eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
         return eventData?.campaignInfo?.fundraisingGoal ?? 0;
     }
 };
