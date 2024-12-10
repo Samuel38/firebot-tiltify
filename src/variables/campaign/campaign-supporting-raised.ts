@@ -18,7 +18,6 @@ export const TiltifyCampaignSupportingRaisedVariable: ReplaceVariable = {
             ],
             "manual": true
         },
-        //@ts-expect-error ts2322
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {

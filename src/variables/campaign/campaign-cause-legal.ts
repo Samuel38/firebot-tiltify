@@ -18,7 +18,6 @@ export const TiltifyCampaignCauseLegalVariable: ReplaceVariable = {
             ],
             "manual": true
         },
-        //@ts-expect-error ts2322
         possibleDataOutput: [OutputDataType.TEXT]
     },
     evaluator: function (trigger): string {
