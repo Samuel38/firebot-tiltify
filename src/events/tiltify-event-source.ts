@@ -41,7 +41,7 @@ export const TiltifyEventSource: EventSource = {
             activityFeed: {
                 icon: "fad fa-heart",
                 getMessage: (eventData: TiltifyDonationEventData) => {
-                    return `**${eventData.from}** donated **$${eventData.donationAmount}** to Tiltify${eventData.rewardName ? ` with reward *${eventData.rewardName}*` : eventData.rewardId ? ` with reward *${eventData.rewardId}*` : ""}`;
+                    return `**${eventData.from}** donated **$${eventData.donationAmount}** to ${eventData.campaignInfo.name}${eventData.rewardName ? ` with reward *${eventData.rewardName}*` : eventData.rewardId ? ` with reward *${eventData.rewardId}*` : ""}`;
                 }
             }
         }, 
