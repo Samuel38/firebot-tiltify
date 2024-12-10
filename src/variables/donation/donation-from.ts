@@ -2,13 +2,13 @@ import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/type
 import {
     TILTIFY_EVENT_SOURCE_ID,
     TILTIFY_DONATION_EVENT_ID
-} from "../constants";
-import { TiltifyDonationEventData } from "../events/donation-event-data";
+} from "../../constants";
+import { TiltifyDonationEventData } from "../../events/donation-event-data";
 
-export const TiltifyDonationRewardIdVariable: ReplaceVariable = {
+export const TiltifyDonationFromVariable: ReplaceVariable = {
     definition: {
-        handle: "tiltifyDonationRewardId",
-        description: "The reward ID of a donation from Tiltify",
+        handle: "tiltifyDonationFrom",
+        description: "The name of who sent a Tiltify donation",
         triggers: {
             "event": [
                 `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`
@@ -19,6 +19,6 @@ export const TiltifyDonationRewardIdVariable: ReplaceVariable = {
     },
     evaluator: function (trigger): string {
         let eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
-        return eventData?.rewardId ?? "";
+        return eventData?.from ?? "Unknown User";
     }
 };

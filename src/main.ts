@@ -22,20 +22,7 @@ import {
     TILTIFY_MILESTONE_EVENT_ID 
 } from "./constants";
 
-import {
-    TiltifyDonationFromVariable,
-    TiltifyDonationAmountVariable,
-    TiltifyDonationRewardIdVariable,
-    TiltifyDonationCommentVariable,
-    TiltifyCampaignNameVariable,
-    TiltifyCampaignCauseVariable,
-    TiltifyCampaignCauseLegalVariable,
-    TiltifyCampaignGoalVariable,
-    TiltifyCampaignOriginalGoalVariable,
-    TiltifyCampaignSupportingRaisedVariable,
-    TiltifyCampaignRaisedVariable,
-    TiltifyCampaignTotalRaisedVariable
-} from "./variables";
+import * as Variables  from "./variables";
 
 import { RewardFilter } from "./filters/reward-filter";
 import { PollOptionFilter } from "./filters/poll-option-filter";
@@ -55,6 +42,7 @@ import {
 import { TiltifyCampaign } from "./types/campaign";
 import { TiltifyCampaignReward } from "./types/campaign-reward";
 import { TiltifyMilestone } from "./types/milestone";
+import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 
 const packageInfo = require("../package.json");
 
@@ -479,18 +467,10 @@ const script: Firebot.CustomScript = {
 
         eventManager.registerEventSource(TiltifyEventSource);
 
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationFromVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationAmountVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationRewardIdVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyDonationCommentVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignNameVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignCauseVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignCauseLegalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignGoalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignOriginalGoalVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignSupportingRaisedVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignRaisedVariable);
-        replaceVariableManager.registerReplaceVariable(TiltifyCampaignTotalRaisedVariable);
+        // Register all variables of the integration module
+        let variables: ReplaceVariable[] = Object.values(Variables);
+        for (const variable of variables) 
+            replaceVariableManager.registerReplaceVariable(variable);
 
         eventFilterManager.registerFilter(RewardFilter);
         eventFilterManager.registerFilter(PollOptionFilter);
