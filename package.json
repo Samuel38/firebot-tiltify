@@ -2,7 +2,7 @@
   "name": "firebot-tiltify",
   "scriptOutputName": "firebot-tiltify",
   "version": "2.0.1",
-  "description": "A basic Firebot plugin for integration with Tiltify campaigns.",
+  "description": "A Firebot plugin for integration with Tiltify campaigns.",
   "main": "",
   "scripts": {
     "build": "webpack",

@@ -23,4 +23,4 @@ export function initModules(scriptModules: ScriptModules): void {
     jsonDb = scriptModules.JsonDb;
     utils = scriptModules.utils;
     httpServer = scriptModules.httpServer;
-};
+}

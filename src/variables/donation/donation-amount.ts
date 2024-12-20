@@ -19,7 +19,7 @@ export const TiltifyDonationAmountVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        let eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        const eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
         return eventData?.donationAmount ?? 0;
     }
 };

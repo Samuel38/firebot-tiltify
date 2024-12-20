@@ -19,7 +19,7 @@ export const TiltifyMilestoneAmountVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        let eventData: TiltifyMilestoneReachedEventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
+        const eventData: TiltifyMilestoneReachedEventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
         return eventData?.amount ?? 0;
     }
 };

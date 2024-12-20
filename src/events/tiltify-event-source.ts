@@ -44,7 +44,7 @@ export const TiltifyEventSource: EventSource = {
                     return `**${eventData.from}** donated **$${eventData.donationAmount}** to ${eventData.campaignInfo.name}${eventData.rewardName ? ` with reward *${eventData.rewardName}*` : eventData.rewardId ? ` with reward *${eventData.rewardId}*` : ""}`;
                 }
             }
-        }, 
+        },
         {
             id: TILTIFY_MILESTONE_EVENT_ID,
             name: "Milestone Reached",

@@ -3,17 +3,17 @@ import {
     Integration
 } from "@crowbartools/firebot-custom-scripts-types";
 
-import { 
+import {
     TiltifyIntegration,
     TiltifySettings,
     integrationDefinition
- } from "./tiltify-integration";
+} from "./tiltify-integration";
 
 import {
     logger,
     integrationManager,
     initModules
-  } from "@shared/firebot-modules";
+} from "@shared/firebot-modules";
 
 const packageInfo = require("../package.json");
 

@@ -150,14 +150,14 @@ export async function fetchTargets(token: string, campaignId: string) {
     }
 }
 
-export async function getMilestones(token: string, campaign_Id: string) : Promise<TiltifyMilestone[]> {
+export async function getMilestones(token: string, campaignId: string) : Promise<TiltifyMilestone[]> {
     try {
         const response = await axios.get<TiltifyApiResponse<TiltifyMilestone[]>>(
-            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaign_Id}/milestones`, {
-            headers: {
-                Authorization: `Bearer ${token}`
-            }
-        });
+            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/milestones`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
         return response.data.data;
 
     } catch (e) {

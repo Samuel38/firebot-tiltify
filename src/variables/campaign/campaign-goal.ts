@@ -21,7 +21,7 @@ export const TiltifyCampaignGoalVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        let eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
+        const eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
         return eventData?.campaignInfo?.fundraisingGoal ?? 0;
     }
 };

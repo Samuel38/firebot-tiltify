@@ -21,7 +21,7 @@ export const TiltifyCampaignCauseVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.TEXT]
     },
     evaluator: function (trigger): string {
-        let eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
+        const eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
         return eventData?.campaignInfo?.cause ?? "unknown";
     }
 };
