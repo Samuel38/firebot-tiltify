@@ -22,10 +22,10 @@ export const ChallengeFilter: EventFilter = {
 
         switch (filterSettings.comparisonType) {
             case "is": {
-                return Promise.resolve(challengeId == filterSettings.value);
+                return Promise.resolve(challengeId === filterSettings.value);
             }
             case "is not": {
-                return Promise.resolve(challengeId != filterSettings.value);
+                return Promise.resolve(challengeId !== filterSettings.value);
             }
             default: {
                 return Promise.resolve(false);

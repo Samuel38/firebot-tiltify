@@ -1,8 +1,9 @@
-import { 
+import {
     IntegrationEvents,
     IntegrationController,
-    IntegrationData, 
+    IntegrationData,
     IntegrationDefinition,
+    LinkData
 } from "@crowbartools/firebot-custom-scripts-types";
 
 import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
@@ -30,13 +31,13 @@ import { TiltifyDonationEventData } from "./events/donation-event-data";
 import { TiltifyMilestoneReachedEventData } from "./events/milestone-reached-event-data";
 import { TiltifyEventSource } from "./events/tiltify-event-source";
 
-import * as Variables  from "./variables";
-import * as EventFilters  from "./filters";
+import * as Variables from "./variables";
+import * as EventFilters from "./filters";
 
-import { 
-    TILTIFY_EVENT_SOURCE_ID, 
-    TILTIFY_DONATION_EVENT_ID, 
-    TILTIFY_MILESTONE_EVENT_ID 
+import {
+    TILTIFY_EVENT_SOURCE_ID,
+    TILTIFY_DONATION_EVENT_ID,
+    TILTIFY_MILESTONE_EVENT_ID
 } from "./constants";
 
 import {
@@ -46,18 +47,18 @@ import {
     eventManager,
     eventFilterManager,
     frontendCommunicator
-  } from "@shared/firebot-modules";
+} from "@shared/firebot-modules";
 
 const path = require("path");
 
 export type TiltifySettings = {
-      integrationSettings: {
-          pollInterval: number;
-      }
-      campaignSettings: {
-          campaignId: string;
-      }
-  }
+    integrationSettings: {
+        pollInterval: number;
+    }
+    campaignSettings: {
+        campaignId: string;
+    }
+}
 
 
 class IntegrationEventEmitter extends TypedEmitter<IntegrationEvents> { }
@@ -65,8 +66,8 @@ class IntegrationEventEmitter extends TypedEmitter<IntegrationEvents> { }
 export class TiltifyIntegration
     extends IntegrationEventEmitter
     implements IntegrationController<TiltifySettings> {
-    readonly db_path: string;
-    
+    readonly dbPath: string;
+
     timeout: NodeJS.Timeout;
     connected = false;
     private db: JsonDB;
@@ -75,26 +76,28 @@ export class TiltifyIntegration
         super();
         this.timeout = null;
         this.connected = false;
-        this.db_path = path.join(SCRIPTS_DIR, '..', 'db', 'tiltify.db');
-        this.db = new JsonDB(this.db_path, true, false, "/");
+        this.dbPath = path.join(SCRIPTS_DIR, '..', 'db', 'tiltify.db');
+        this.db = new JsonDB(this.dbPath, true, false, "/");
         // Returns error "TS2459: Module '"node-json-db"' declares 'Config' locally, but it is not exported." not sure why
     }
 
-    init() { 
+    init(linked: boolean, integrationData: IntegrationData) { // TODO integrationData should replace integration
         logger.info(`Initializing Tiltify integration...`);
         // Register all events
         eventManager.registerEventSource(TiltifyEventSource);
 
         // Register all variables of the integration module
-        let variables: ReplaceVariable[] = Object.values(Variables);
-        for (const variable of variables) 
+        const variables: ReplaceVariable[] = Object.values(Variables);
+        for (const variable of variables) {
             variableManager.registerReplaceVariable(variable);
+        }
 
         // Register all event filters of the integration module
-        let filters: EventFilter[] = Object.values(EventFilters);
-        for (const filter of filters) 
+        const filters: EventFilter[] = Object.values(EventFilters);
+        for (const filter of filters) {
             eventFilterManager.registerFilter(filter);
-        
+        }
+
 
         frontendCommunicator.onAsync("get-tiltify-rewards", async () => {
             if (!isIntegrationConfigValid()) {
@@ -133,27 +136,34 @@ export class TiltifyIntegration
         });
 
         logger.info("Tiltify integration loaded");
-        }
+    }
 
-    link() { }
-    unlink() { }
+    link(linkData: LinkData) {
+        // Link is when we have received the token for the first time.
+        // Once Linked, we're allowed to connect
+        logger.info("Tiltify integration linked.");
+    }
+    unlink() {
+        logger.info("Tiltify integration unlinked.");
+    }
 
-    async connect(integrationData: IntegrationData) {
+    async connect(integrationData: IntegrationData) { // Auth data passed in auth key rather than oauth key. Probable Firebot bug
         // Get the saved access token
-        let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
-        // Check whether the token is still valid, and if needed, refresh it. 
+        const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
+        let token = integrationDefinition?.auth?.access_token;
+        // Check whether the token is still valid, and if needed, refresh it.
         if (await validateToken(token) !== true) {
             logger.debug("Tiltify : Token invalid. Refreshing token. ");
-            token = await this.refreshToken();
+            token = this.refreshToken("tiltify");
         }
-        // If the refreshing fails, disconnect tiltify. 
+        // If the refreshing fails, disconnect tiltify.
         if (token == null || token === "") {
             logger.debug("Tiltify : Refreshing token failed. Disconnecting Tiltify. ");
             this.emit("disconnected", integrationDefinition.id);
             this.connected = false;
             return;
         }
-        // Disconnect if the settings for the integration aren't valid. 
+        // Disconnect if the settings for the integration aren't valid.
         if (integrationData.userSettings == null || integrationData.userSettings.campaignSettings == null) {
             logger.debug("Tiltify : Integration settings invalid. Disconnecting Tiltify. ");
             this.emit("disconnected", integrationDefinition.id);
@@ -161,7 +171,7 @@ export class TiltifyIntegration
             return;
         }
 
-        // Checking the campaign Id is present. 
+        // Checking the campaign Id is present.
         const campaignId = integrationData?.userSettings?.campaignSettings?.campaignId as string;
         if (campaignId == null || campaignId === "") {
             logger.debug("Tiltify : No campaign Id. Disconnecting Tiltify. ");
@@ -170,7 +180,7 @@ export class TiltifyIntegration
             return;
         }
 
-        // Populate information about the campaign. This is mandatory to have. If not, we have a problem. 
+        // Populate information about the campaign. This is mandatory to have. If not, we have a problem.
         // This contains the money raised, so it will update
         let campaignInfo: TiltifyCampaign = await getCampaign(token, campaignId);
         if (campaignInfo?.cause_id == null || campaignInfo.cause_id === "") {
@@ -183,19 +193,19 @@ export class TiltifyIntegration
         // Populate info about the cause the campaign is collecting for. This should not change
         const causeInfo = await getCause(token, campaignInfo.cause_id);
 
-        // Populate info about the rewards offered. 
-        // This is gonna update to reflect the quantities available and offered and possible new rewards. 
+        // Populate info about the rewards offered.
+        // This is gonna update to reflect the quantities available and offered and possible new rewards.
         let rewardsInfo: TiltifyCampaignReward[] = await fetchRewards(token, campaignId);
-        logger.debug("Tiltify: Campaign Rewards: ", rewardsInfo.map((re) => `
+        logger.debug("Tiltify: Campaign Rewards: ", rewardsInfo.map(re => `
 ID: ${re.id}
 Name: ${re.name}
 Amount: $${re.amount.value}
 Active: ${re.active}`).join("\n"));
 
-        // Populate info about the Milestones. 
-        // This is gonna update to reflect the activation and possible new Milestones. 
+        // Populate info about the Milestones.
+        // This is gonna update to reflect the activation and possible new Milestones.
         let milestonesInfo: TiltifyMilestone[] = await getMilestones(token, campaignId);
-        logger.debug("Tiltify: Campaign Milestones: ", milestonesInfo.map((mi) => `
+        logger.debug("Tiltify: Campaign Milestones: ", milestonesInfo.map(mi => `
 ID: ${mi.id}
 Name: ${mi.name}
 Amount: $${mi.amount.value}
@@ -203,7 +213,7 @@ Active: ${mi.active}
 Reached: ${mi.reached}`).join("\n"));
         // Load saved milestones if any
         // They are saved to keep memory of which milestones have previously been reached so we know what events to trigger
-        let savedMilestones: TiltifyMilestone[]
+        let savedMilestones: TiltifyMilestone[];
         try {
             savedMilestones = await this.db.getData(`/tiltify/${campaignId}/milestones`);
         } catch {
@@ -214,7 +224,7 @@ Reached: ${mi.reached}`).join("\n"));
             // Check if loaded milestone has been reached
             milestone.reached = Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value);
             // Checked the saved value for the milestone
-            let savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id == milestone.id);
+            const savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id === milestone.id);
             // If the milestone was unknown
             if (!savedMilestone) {
                 // Set reached as false so the event triggers
@@ -230,13 +240,14 @@ Reached: ${mi.reached}`).join("\n"));
 
         // This is the loop that updates. We register it now, but it's gonna update asynchronously
         this.timeout = setInterval(async () => {
-            let token = integrationManager.getIntegrationDefinitionById("tiltify")?.auth?.access_token;
-            // Check whether the token is still valid, and if needed, refresh it. 
+            const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
+            let token = integrationDefinition?.auth?.access_token;
+            // Check whether the token is still valid, and if needed, refresh it.
             if (await validateToken(token) !== true) {
                 logger.debug("Tiltify : Token invalid. Refreshing token. ");
-                token = await this.refreshToken();
+                token = this.refreshToken("tiltify");
             }
-            // If the refreshing fails, disconnect tiltify. 
+            // If the refreshing fails, disconnect tiltify.
             if (token == null || token === "") {
                 logger.debug("Tiltify : Refreshing token failed. Disconnecting Tiltify. ");
                 this.emit("disconnected", integrationDefinition.id);
@@ -262,33 +273,33 @@ Reached: ${mi.reached}`).join("\n"));
                 this.db.push(`/tiltify/${campaignId}/ids`, []);
             }
 
-            // Acquire the donations since the last saved from Tiltify and sort them by date. 
+            // Acquire the donations since the last saved from Tiltify and sort them by date.
             const donations = await getCampaignDonations(token, campaignId, lastDonationDate);
             const sortedDonations = donations.sort((a, b) => Date.parse(a.completed_at) - Date.parse(b.completed_at));
 
             // Process each donation
-            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ? 
+            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ?
             sortedDonations.forEach(async (donation) => {
-                // Don't process it if we already have registered it. 
+                // Don't process it if we already have registered it.
                 if (ids.includes(donation.id)) {
                     return;
                 }
 
                 // A donation has happened. Reload campaign info to update collected amounts
                 campaignInfo = await getCampaign(token, campaignId);
-                // If we don't know the reward, reload rewards and retry. 
-                let matchingreward: TiltifyCampaignReward = rewardsInfo.find(ri => ri.id == donation.reward_id);
-                if(!matchingreward) {
+                // If we don't know the reward, reload rewards and retry.
+                let matchingreward: TiltifyCampaignReward = rewardsInfo.find(ri => ri.id === donation.reward_id);
+                if (!matchingreward) {
                     rewardsInfo = await fetchRewards(token, campaignId);
-                    matchingreward = rewardsInfo.find(ri => ri.id == donation.reward_id);
+                    matchingreward = rewardsInfo.find(ri => ri.id === donation.reward_id);
                 }
-                // FIXME : Rewards contain info about quantity remaining. We should update that when a donation comes in claiming a reward. 
+                // FIXME : Rewards contain info about quantity remaining. We should update that when a donation comes in claiming a reward.
 
-                // Update the last donation date to the current one. 
+                // Update the last donation date to the current one.
                 lastDonationDate = donation.completed_at;
 
-                // Extract the info to populate a Firebot donation event. 
-                let eventDetails: TiltifyDonationEventData = {
+                // Extract the info to populate a Firebot donation event.
+                const eventDetails: TiltifyDonationEventData = {
                     from: donation.donor_name,
                     donationAmount: Number(donation.amount.value),
                     rewardId: donation.reward_id,
@@ -324,15 +335,15 @@ Cause : ${eventDetails.campaignInfo.cause}`);
 
             // Check for milestones reached
             savedMilestones = await this.db.getData(`/tiltify/${campaignId}/milestones`);
-            let milestoneTriggered: boolean = false;
-            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ? 
-            savedMilestones.forEach( (milestone: TiltifyMilestone) =>{
+            let milestoneTriggered = false;
+            // FIXME : Technically, foreach isn't supposed to take an async function, but that's necessary to be able to await inside. What to do ?
+            savedMilestones.forEach((milestone: TiltifyMilestone) => {
                 // Check if milestone has been reached
-                if( !milestone.reached && Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value) ) {
+                if (!milestone.reached && Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value)) {
                     milestone.reached = true;
                     milestoneTriggered = true;
-                    // Extract the info to populate a Firebot milestone event. 
-                    let eventDetails: TiltifyMilestoneReachedEventData = {
+                    // Extract the info to populate a Firebot milestone event.
+                    const eventDetails: TiltifyMilestoneReachedEventData = {
                         id: milestone.id,
                         name: milestone.name,
                         amount: Number(milestone.amount.value),
@@ -357,14 +368,14 @@ Cause: ${eventDetails.campaignInfo.cause}`);
                     eventManager.triggerEvent(TILTIFY_EVENT_SOURCE_ID, TILTIFY_MILESTONE_EVENT_ID, eventDetails, false);
                 }
             });
-            if ( milestoneTriggered ) {
-                // if we triggered a milestone, we want to reload the milestones from tiltify. 
+            if (milestoneTriggered) {
+                // if we triggered a milestone, we want to reload the milestones from tiltify.
                 milestonesInfo = await getMilestones(token, campaignId);
                 milestonesInfo.forEach((milestone: TiltifyMilestone) => {
                     // Check if loaded milestone has been reached
                     milestone.reached = Number(campaignInfo?.amount_raised?.value ?? 0) >= Number(milestone.amount.value);
                     // Checked the saved value for the milestone
-                    let savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id == milestone.id);
+                    const savedMilestone: TiltifyMilestone = savedMilestones.find((mi: TiltifyMilestone) => mi.id === milestone.id);
                     // If the milestone was unknown
                     if (!savedMilestone) {
                         // Set reached as false so the event triggers
@@ -377,7 +388,7 @@ Cause: ${eventDetails.campaignInfo.cause}`);
                     }
                 });
             } else {
-                milestonesInfo = savedMilestones
+                milestonesInfo = savedMilestones;
             }
             // Save the milestones
             this.db.push(`/tiltify/${campaignId}/milestones`, milestonesInfo);
@@ -391,6 +402,7 @@ Cause: ${eventDetails.campaignInfo.cause}`);
 
     // Disconnect the Integration
     disconnect() {
+        const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
         // Clear the event processing loop
         if (this.timeout) {
             clearInterval(this.timeout);
@@ -411,9 +423,15 @@ Cause: ${eventDetails.campaignInfo.cause}`);
     }
 
     // Doing this here because of a bug in Firebot where it isn't refreshing automatically
-    async refreshToken(): Promise<string> {
+    async refreshToken(integrationId: string): Promise<string> {
+        // Checks if the IntegrationManager has a refreshToken Method and uses it if true.
+        if (typeof integrationManager.refreshToken === 'function') {
+            return integrationManager.refreshToken("tiltify")?.auth?.access_token;
+        }
+        // If not, we have to implement it ourselves
         try {
-            const auth = integrationManager.getIntegrationDefinitionById("tiltify")?.auth;
+            const integrationDefinition = integrationManager.getIntegrationDefinitionById(integrationId);
+            const auth = integrationDefinition?.auth;
             // @ts-ignore
             const authProvider = integrationDefinition.authProviderDetails;
 
@@ -422,7 +440,7 @@ Cause: ${eventDetails.campaignInfo.cause}`);
                 const response = await axios.post(url);
 
                 if (response.status === 200) {
-                    const int = integrationManager.getIntegrationById("tiltify");
+                    const int = integrationManager.getIntegrationById(integrationId);
                     // @ts-ignore
                     integrationManager.saveIntegrationAuth(int, response.data);
 
@@ -477,12 +495,18 @@ export const integrationDefinition: IntegrationDefinition<TiltifySettings> = {
             id: "55ee54fe15f8ee41fac947b1123ba4ea134b31de112b947c5f1afcffec471337",
             secret: "b3fa00a003b5b1197d26ccc181d43801dd854906883b7279a386368a44f36293"
         },
+        options: {
+            body: {
+                client_id: "55ee54fe15f8ee41fac947b1123ba4ea134b31de112b947c5f1afcffec471337",
+                client_secret: "b3fa00a003b5b1197d26ccc181d43801dd854906883b7279a386368a44f36293"
+            }
+        },
         auth: {
             // @ts-ignore
             type: "code",
-            tokenHost: "https://v5api.tiltify.com",
+            tokenHost: "https://v5api.tiltify.com", // Move to authorizeHost ? tokenHost is used as default
             authorizePath: "/oauth/authorize",
-            tokenPath: "/oauth/token"
+            tokenPath: "/oauth/token" // To be removed when removing token flow
         },
         autoRefreshToken: true,
         scopes: "public"
@@ -490,8 +514,8 @@ export const integrationDefinition: IntegrationDefinition<TiltifySettings> = {
 };
 
 function isIntegrationConfigValid(): boolean {
-    const integration = integrationManager.getIntegrationDefinitionById("tiltify");
+    const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
 
-    return integration?.userSettings?.campaignSettings?.campaignId != null
-        && integration?.userSettings?.campaignSettings?.campaignId !== "";
-};
+    return integrationDefinition?.userSettings?.campaignSettings?.campaignId != null
+        && integrationDefinition?.userSettings?.campaignSettings?.campaignId !== "";
+}

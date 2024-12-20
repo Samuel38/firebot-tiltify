@@ -22,10 +22,10 @@ export const PollOptionFilter: EventFilter = {
 
         switch (filterSettings.comparisonType) {
             case "is": {
-                return Promise.resolve(pollOptionId == filterSettings.value);
+                return Promise.resolve(pollOptionId === filterSettings.value);
             }
             case "is not": {
-                return Promise.resolve(pollOptionId != filterSettings.value);
+                return Promise.resolve(pollOptionId !== filterSettings.value);
             }
             default: {
                 return Promise.resolve(false);
