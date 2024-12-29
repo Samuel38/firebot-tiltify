@@ -3,13 +3,13 @@ import {
     IntegrationController,
     IntegrationData,
     IntegrationDefinition,
-    LinkData
+    LinkData,
+    AuthDetails
 } from "@crowbartools/firebot-custom-scripts-types";
 
 import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 import { EventFilter } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
 
-import { TypedEmitter } from "tiny-typed-emitter";
 import { JsonDB } from "node-json-db";
 import axios from "axios";
 
@@ -60,12 +60,9 @@ export type TiltifySettings = {
     }
 }
 
+type TiltifyIntegrationEvents = IntegrationEvents
 
-class IntegrationEventEmitter extends TypedEmitter<IntegrationEvents> { }
-
-export class TiltifyIntegration
-    extends IntegrationEventEmitter
-    implements IntegrationController<TiltifySettings> {
+export class TiltifyIntegration extends IntegrationController<TiltifySettings, TiltifyIntegrationEvents> {
     readonly dbPath: string;
 
     timeout: NodeJS.Timeout;
@@ -81,7 +78,7 @@ export class TiltifyIntegration
         // Returns error "TS2459: Module '"node-json-db"' declares 'Config' locally, but it is not exported." not sure why
     }
 
-    init(linked: boolean, integrationData: IntegrationData) { // TODO integrationData should replace integration
+    init(linked: boolean, integrationData: IntegrationData) {
         logger.info(`Initializing Tiltify integration...`);
         // Register all events
         eventManager.registerEventSource(TiltifyEventSource);
@@ -100,39 +97,57 @@ export class TiltifyIntegration
 
 
         frontendCommunicator.onAsync("get-tiltify-rewards", async () => {
-            if (!isIntegrationConfigValid()) {
+            if (!TiltifyIntegration.isIntegrationConfigValid()) {
                 throw new Error("Tiltify integration not found or not configured");
             }
 
-            const integration = integrationManager.getIntegrationDefinitionById("tiltify");
-            const accessToken = integration.auth?.access_token;
+            const integration = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+            const authData: LinkData = await integrationManager.getAuth("tiltify");
+            if (authData === null || "auth" in authData === false) {
+                return;
+            }
+            const accessToken = authData.auth?.access_token;
             const campaignId = integration.userSettings.campaignSettings.campaignId;
 
             return await fetchRewards(accessToken, campaignId);
         });
 
         frontendCommunicator.onAsync("get-tiltify-poll-options", async () => {
-            if (!isIntegrationConfigValid()) {
+            if (!TiltifyIntegration.isIntegrationConfigValid()) {
                 throw new Error("Tiltify integration not found or not configured");
             }
 
-            const integration = integrationManager.getIntegrationDefinitionById("tiltify");
-            const accessToken = integration.auth?.access_token;
+            const integration = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+            const authData = await integrationManager.getAuth("tiltify");
+            if (authData === null || "auth" in authData === false) {
+                return;
+            }
+            const accessToken = authData.auth?.access_token;
             const campaignId = integration.userSettings.campaignSettings.campaignId;
 
             return await fetchPollOptions(accessToken, campaignId);
         });
 
         frontendCommunicator.onAsync("get-tiltify-challenges", async () => {
-            if (!isIntegrationConfigValid()) {
+            if (!TiltifyIntegration.isIntegrationConfigValid()) {
                 throw new Error("Tiltify integration not found or not configured");
             }
 
-            const integration = integrationManager.getIntegrationDefinitionById("tiltify");
-            const accessToken = integration.auth?.access_token;
+            const integration = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+            const authData = await integrationManager.getAuth("tiltify");
+            if (authData === null || "auth" in authData === false) {
+                return;
+            }
+            const accessToken = authData.auth?.access_token;
             const campaignId = integration.userSettings.campaignSettings.campaignId;
 
             return await fetchTargets(accessToken, campaignId);
+        });
+
+        integrationManager.on("token-refreshed", (integrationId: string, updatedToken: AuthDetails) => {
+            if (integrationId === "tiltify") {
+                logger.debug("Tiltify token refreshed");
+            }
         });
 
         logger.info("Tiltify integration loaded");
@@ -147,14 +162,18 @@ export class TiltifyIntegration
         logger.info("Tiltify integration unlinked.");
     }
 
-    async connect(integrationData: IntegrationData) { // Auth data passed in auth key rather than oauth key. Probable Firebot bug
+    async connect(integrationData: IntegrationData) {
         // Get the saved access token
-        const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
-        let token = integrationDefinition?.auth?.access_token;
+        const integrationDefinition = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+        const authData = await integrationManager.getAuth("tiltify");
+        if (authData === null || "auth" in authData === false) {
+            return;
+        }
+        let token = authData.auth?.access_token;
         // Check whether the token is still valid, and if needed, refresh it.
         if (await validateToken(token) !== true) {
             logger.debug("Tiltify : Token invalid. Refreshing token. ");
-            token = this.refreshToken("tiltify");
+            token = await this.refreshToken("tiltify");
         }
         // If the refreshing fails, disconnect tiltify.
         if (token == null || token === "") {
@@ -240,12 +259,16 @@ Reached: ${mi.reached}`).join("\n"));
 
         // This is the loop that updates. We register it now, but it's gonna update asynchronously
         this.timeout = setInterval(async () => {
-            const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
-            let token = integrationDefinition?.auth?.access_token;
+            const integrationDefinition = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+            const authData = await integrationManager.getAuth("tiltify");
+            if (authData === null || "auth" in authData === false) {
+                return;
+            }
+            let token = authData.auth?.access_token;
             // Check whether the token is still valid, and if needed, refresh it.
             if (await validateToken(token) !== true) {
                 logger.debug("Tiltify : Token invalid. Refreshing token. ");
-                token = this.refreshToken("tiltify");
+                token = await this.refreshToken("tiltify");
             }
             // If the refreshing fails, disconnect tiltify.
             if (token == null || token === "") {
@@ -402,7 +425,7 @@ Cause: ${eventDetails.campaignInfo.cause}`);
 
     // Disconnect the Integration
     disconnect() {
-        const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
+        const integrationDefinition = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
         // Clear the event processing loop
         if (this.timeout) {
             clearInterval(this.timeout);
@@ -426,13 +449,16 @@ Cause: ${eventDetails.campaignInfo.cause}`);
     async refreshToken(integrationId: string): Promise<string> {
         // Checks if the IntegrationManager has a refreshToken Method and uses it if true.
         if (typeof integrationManager.refreshToken === 'function') {
-            return integrationManager.refreshToken("tiltify")?.auth?.access_token;
+            const authData = await integrationManager.refreshToken("tiltify");
+            return authData.access_token;
         }
         // If not, we have to implement it ourselves
         try {
-            const integrationDefinition = integrationManager.getIntegrationDefinitionById(integrationId);
-            const auth = integrationDefinition?.auth;
-            // @ts-ignore
+            const integrationDefinition = integrationManager.getIntegrationDefinitionById<TiltifySettings>(integrationId);
+            if (integrationDefinition.linkType !== "auth") {
+                return;
+            }
+            const auth = integrationDefinition.auth;
             const authProvider = integrationDefinition.authProviderDetails;
 
             if (auth != null) {
@@ -440,8 +466,7 @@ Cause: ${eventDetails.campaignInfo.cause}`);
                 const response = await axios.post(url);
 
                 if (response.status === 200) {
-                    const int = integrationManager.getIntegrationById(integrationId);
-                    // @ts-ignore
+                    const int = integrationManager.getIntegrationById<TiltifySettings>(integrationId);
                     integrationManager.saveIntegrationAuth(int, response.data);
 
                     return response.data.access_token;
@@ -453,6 +478,13 @@ Cause: ${eventDetails.campaignInfo.cause}`);
         }
 
         return;
+    }
+
+    static isIntegrationConfigValid(): boolean {
+        const integrationDefinition = integrationManager.getIntegrationDefinitionById<TiltifySettings>("tiltify");
+
+        return integrationDefinition?.userSettings?.campaignSettings?.campaignId != null
+            && integrationDefinition?.userSettings?.campaignSettings?.campaignId !== "";
     }
 }
 
@@ -495,12 +527,6 @@ export const integrationDefinition: IntegrationDefinition<TiltifySettings> = {
             id: "55ee54fe15f8ee41fac947b1123ba4ea134b31de112b947c5f1afcffec471337",
             secret: "b3fa00a003b5b1197d26ccc181d43801dd854906883b7279a386368a44f36293"
         },
-        options: {
-            body: {
-                client_id: "55ee54fe15f8ee41fac947b1123ba4ea134b31de112b947c5f1afcffec471337",
-                client_secret: "b3fa00a003b5b1197d26ccc181d43801dd854906883b7279a386368a44f36293"
-            }
-        },
         auth: {
             // @ts-ignore
             type: "code",
@@ -512,10 +538,3 @@ export const integrationDefinition: IntegrationDefinition<TiltifySettings> = {
         scopes: "public"
     }
 };
-
-function isIntegrationConfigValid(): boolean {
-    const integrationDefinition = integrationManager.getIntegrationDefinitionById("tiltify");
-
-    return integrationDefinition?.userSettings?.campaignSettings?.campaignId != null
-        && integrationDefinition?.userSettings?.campaignSettings?.campaignId !== "";
-}

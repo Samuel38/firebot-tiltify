@@ -1,5 +1,6 @@
 import { ScriptModules } from "@crowbartools/firebot-custom-scripts-types";
 import { HttpServerManager } from "@crowbartools/firebot-custom-scripts-types/types/modules/http-server-manager";
+
 export declare let logger: ScriptModules["logger"];
 export declare let frontendCommunicator: ScriptModules["frontendCommunicator"];
 export declare let effectRunner: ScriptModules["effectRunner"];

@@ -38,7 +38,7 @@ module.exports = {
         minimizer: [
             new TerserPlugin({
                 terserOptions: {
-                    keep_fnames: /main/,
+                    keep_fnames: /main/, // eslint-disable-line camelcase
                     mangle: false,
                     format: {
                         comments: false

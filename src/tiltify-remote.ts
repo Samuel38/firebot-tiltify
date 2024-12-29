@@ -10,6 +10,8 @@ import { TiltifyDonation } from "./types/donation";
 import { TiltifyPoll, TiltifyPollOption } from "./types/poll";
 import { TiltifyMilestone } from "./types/milestone";
 
+import { logger } from "@shared/firebot-modules";
+
 export async function validateToken(token: string): Promise<boolean> {
     try {
         const response = await axios.get(`${TILTIFY_API_PUBLIC_BASE_URL}/current-user`, {
@@ -20,7 +22,7 @@ export async function validateToken(token: string): Promise<boolean> {
 
         return response.status === 200;
     } catch (e) {
-        console.log("Error validating Tiltify token");
+        logger.warn("Error validating Tiltify token");
 
         return false;
     }
@@ -36,9 +38,9 @@ export async function getCampaign(token: string, campaignId: string): Promise<Ti
         return response.data.data;
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return;
@@ -58,16 +60,16 @@ export async function getCampaignDonations(token: string, campaignId: string, co
         });
 
         if (response.status !== 200) {
-            console.log(`Error fetching donations: ${response.status}`);
+            logger.warn(`Error fetching donations: ${response.status}`);
             return [];
         }
 
         return response.data.data;
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return [];
@@ -84,9 +86,9 @@ export async function getCause(token: string, causeId: string): Promise<TiltifyC
         return response.data.data;
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return;
@@ -103,9 +105,9 @@ export async function fetchRewards(token: string, campaignId: string): Promise<T
         return response.data.data;
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return [];
@@ -122,9 +124,9 @@ export async function fetchPollOptions(token: string, campaignId: string): Promi
         return response.data.data.reduce<TiltifyPollOption[]>((acc, poll) => acc.concat(...poll.options), []);
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return [];
@@ -141,9 +143,9 @@ export async function fetchTargets(token: string, campaignId: string) {
         return response.data.data;
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return [];
@@ -162,9 +164,9 @@ export async function getMilestones(token: string, campaignId: string) : Promise
 
     } catch (e) {
         if (e.response) {
-            console.log(e.response?.data);
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
         } else {
-            console.log("Unknown error");
+            logger.warn("Tiltify Error : Unknown error");
         }
 
         return [];
