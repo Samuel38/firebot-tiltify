@@ -6,5 +6,5 @@ export type TiltifyCampaign = {
     goal: TiltifyMoney;
     name: string;
     original_goal: TiltifyMoney;
-    total_amount_raised: TiltifyMoney
+    total_amount_raised: TiltifyMoney;
 };

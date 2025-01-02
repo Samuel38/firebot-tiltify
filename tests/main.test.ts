@@ -9,15 +9,12 @@ test("main default export is the custom script", () => {
 });
 
 test("run() calls logger.info with the message", async () => {
-    const mockInfoLog = jest.fn<
-    void,
-    ArgumentsOf<ScriptModules["logger"]["info"]>
-    >();
+    const mockInfoLog = jest.fn<void, ArgumentsOf<ScriptModules["logger"]["info"]>>();
     const expectedMessage = "foobar";
-    const runRequest = ({
+    const runRequest = {
         parameters: { message: expectedMessage },
         modules: { logger: { info: mockInfoLog } }
-    } as unknown) as RunRequest<any>;
+    } as unknown as RunRequest<any>;
 
     await customScript.run(runRequest);
 

@@ -1,7 +1,12 @@
 {
-    "editor.defaultFormatter": "dbaeumer.vscode-eslint",
-    "editor.formatOnSave": true,
+    "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
+    "editor.formatOnType": false, // required
+    "editor.formatOnPaste": true, // optional
+    "editor.formatOnSave": true, // optional
+    "files.autoSave": "onFocusChange", // optional but recommended
+    "editor.formatOnSaveMode": "file", // required to format on save
     "[typescript]": {
-      "editor.defaultFormatter": "dbaeumer.vscode-eslint"
-    }
+        "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    },
+    "vs-code-prettier-eslint.prettierLast": false // set as "true" to run 'prettier' last not first
 }
