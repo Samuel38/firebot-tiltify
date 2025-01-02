@@ -1,6 +1,9 @@
 import { ReplaceVariable } from "@crowbartools/firebot-custom-scripts-types/types/modules/replace-variable-manager";
 import { OutputDataType } from "@shared/variable-constants";
-import { TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID } from "@/constants";
+import {
+    TILTIFY_EVENT_SOURCE_ID,
+    TILTIFY_DONATION_EVENT_ID
+} from "@/constants";
 import { TiltifyDonationEventData } from "@/events/donation-event-data";
 
 export const TiltifyDonationFromVariable: ReplaceVariable = {
@@ -14,7 +17,8 @@ export const TiltifyDonationFromVariable: ReplaceVariable = {
         possibleDataOutput: [OutputDataType.TEXT]
     },
     evaluator: function (trigger): string {
-        const eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        const eventData: TiltifyDonationEventData = trigger.metadata
+            ?.eventData as TiltifyDonationEventData;
         return eventData?.from ?? "Unknown User";
     }
 };

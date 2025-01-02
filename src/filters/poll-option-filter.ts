@@ -1,12 +1,20 @@
 import { EventFilter } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-filter-manager";
-import { TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID } from "../constants";
+import {
+    TILTIFY_EVENT_SOURCE_ID,
+    TILTIFY_DONATION_EVENT_ID
+} from "../constants";
 import { TiltifyPollOption } from "../types/poll";
 
 export const PollOptionFilter: EventFilter = {
     id: "tcu:poll-option-id",
     name: "Tiltify Poll Option",
     description: "Filter by the Tiltify poll option.",
-    events: [{ eventSourceId: TILTIFY_EVENT_SOURCE_ID, eventId: TILTIFY_DONATION_EVENT_ID }],
+    events: [
+        {
+            eventSourceId: TILTIFY_EVENT_SOURCE_ID,
+            eventId: TILTIFY_DONATION_EVENT_ID
+        }
+    ],
     comparisonTypes: ["is", "is not"],
     valueType: "preset",
     predicate: (filterSettings, eventData) => {
@@ -24,8 +32,10 @@ export const PollOptionFilter: EventFilter = {
             }
         }
     },
-    presetValues: async backendCommunicator => {
-        return (await backendCommunicator.fireEventAsync("get-tiltify-poll-options")).map((r: TiltifyPollOption) => ({
+    presetValues: async (backendCommunicator) => {
+        return (
+            await backendCommunicator.fireEventAsync("get-tiltify-poll-options")
+        ).map((r: TiltifyPollOption) => ({
             value: r.id,
             display: r.name
         }));

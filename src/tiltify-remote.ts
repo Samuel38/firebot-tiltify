@@ -14,11 +14,14 @@ import { logger } from "@shared/firebot-modules";
 
 export async function validateToken(token: string): Promise<boolean> {
     try {
-        const response = await axios.get(`${TILTIFY_API_PUBLIC_BASE_URL}/current-user`, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await axios.get(
+            `${TILTIFY_API_PUBLIC_BASE_URL}/current-user`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
         return response.status === 200;
     } catch (e) {
@@ -28,7 +31,10 @@ export async function validateToken(token: string): Promise<boolean> {
     }
 }
 
-export async function getCampaign(token: string, campaignId: string): Promise<TiltifyCampaign> {
+export async function getCampaign(
+    token: string,
+    campaignId: string
+): Promise<TiltifyCampaign> {
     try {
         const response = await axios.get<TiltifyApiResponse<TiltifyCampaign>>(
             `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}`,
@@ -61,11 +67,14 @@ export async function getCampaignDonations(
                 ? `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/donations?completed_after=${completedAfter}`
                 : `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/donations`;
 
-        const response = await axios.get<TiltifyApiResponse<TiltifyDonation[]>>(url, {
-            headers: {
-                Authorization: `Bearer ${token}`
+        const response = await axios.get<TiltifyApiResponse<TiltifyDonation[]>>(
+            url,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             }
-        });
+        );
 
         if (response.status !== 200) {
             logger.warn(`Error fetching donations: ${response.status}`);
@@ -84,7 +93,10 @@ export async function getCampaignDonations(
     }
 }
 
-export async function getCause(token: string, causeId: string): Promise<TiltifyCause> {
+export async function getCause(
+    token: string,
+    causeId: string
+): Promise<TiltifyCause> {
     try {
         const response = await axios.get<TiltifyApiResponse<TiltifyCause>>(
             `${TILTIFY_API_PUBLIC_BASE_URL}/causes/${causeId}`,
@@ -106,53 +118,14 @@ export async function getCause(token: string, causeId: string): Promise<TiltifyC
     }
 }
 
-export async function fetchRewards(token: string, campaignId: string): Promise<TiltifyCampaignReward[]> {
+export async function fetchRewards(
+    token: string,
+    campaignId: string
+): Promise<TiltifyCampaignReward[]> {
     try {
-        const response = await axios.get<TiltifyApiResponse<TiltifyCampaignReward[]>>(
-            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/rewards`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        return response.data.data;
-    } catch (e) {
-        if (e.response) {
-            logger.warn(`Tiltify Error : ${e.response?.data}`);
-        } else {
-            logger.warn("Tiltify Error : Unknown error");
-        }
-
-        return [];
-    }
-}
-
-export async function fetchPollOptions(token: string, campaignId: string): Promise<TiltifyPollOption[]> {
-    try {
-        const response = await axios.get<TiltifyApiResponse<TiltifyPoll[]>>(
-            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/polls`,
-            {
-                headers: {
-                    Authorization: `Bearer ${token}`
-                }
-            }
-        );
-        return response.data.data.reduce<TiltifyPollOption[]>((acc, poll) => acc.concat(...poll.options), []);
-    } catch (e) {
-        if (e.response) {
-            logger.warn(`Tiltify Error : ${e.response?.data}`);
-        } else {
-            logger.warn("Tiltify Error : Unknown error");
-        }
-
-        return [];
-    }
-}
-
-export async function fetchTargets(token: string, campaignId: string) {
-    try {
-        const response = await axios.get(`${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/targets`, {
+        const response = await axios.get<
+        TiltifyApiResponse<TiltifyCampaignReward[]>
+        >(`${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/rewards`, {
             headers: {
                 Authorization: `Bearer ${token}`
             }
@@ -169,16 +142,68 @@ export async function fetchTargets(token: string, campaignId: string) {
     }
 }
 
-export async function getMilestones(token: string, campaignId: string): Promise<TiltifyMilestone[]> {
+export async function fetchPollOptions(
+    token: string,
+    campaignId: string
+): Promise<TiltifyPollOption[]> {
     try {
-        const response = await axios.get<TiltifyApiResponse<TiltifyMilestone[]>>(
-            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/milestones`,
+        const response = await axios.get<TiltifyApiResponse<TiltifyPoll[]>>(
+            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/polls`,
             {
                 headers: {
                     Authorization: `Bearer ${token}`
                 }
             }
         );
+        return response.data.data.reduce<TiltifyPollOption[]>(
+            (acc, poll) => acc.concat(...poll.options),
+            []
+        );
+    } catch (e) {
+        if (e.response) {
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
+        } else {
+            logger.warn("Tiltify Error : Unknown error");
+        }
+
+        return [];
+    }
+}
+
+export async function fetchTargets(token: string, campaignId: string) {
+    try {
+        const response = await axios.get(
+            `${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/targets`,
+            {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            }
+        );
+        return response.data.data;
+    } catch (e) {
+        if (e.response) {
+            logger.warn(`Tiltify Error : ${e.response?.data}`);
+        } else {
+            logger.warn("Tiltify Error : Unknown error");
+        }
+
+        return [];
+    }
+}
+
+export async function getMilestones(
+    token: string,
+    campaignId: string
+): Promise<TiltifyMilestone[]> {
+    try {
+        const response = await axios.get<
+        TiltifyApiResponse<TiltifyMilestone[]>
+        >(`${TILTIFY_API_PUBLIC_BASE_URL}/campaigns/${campaignId}/milestones`, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
         return response.data.data;
     } catch (e) {
         if (e.response) {

@@ -1,5 +1,9 @@
 import { EventSource } from "@crowbartools/firebot-custom-scripts-types/types/modules/event-manager";
-import { TILTIFY_EVENT_SOURCE_ID, TILTIFY_DONATION_EVENT_ID, TILTIFY_MILESTONE_EVENT_ID } from "../constants";
+import {
+    TILTIFY_EVENT_SOURCE_ID,
+    TILTIFY_DONATION_EVENT_ID,
+    TILTIFY_MILESTONE_EVENT_ID
+} from "../constants";
 import { TiltifyDonationEventData } from "./donation-event-data";
 import { TiltifyMilestoneReachedEventData } from "./milestone-reached-event-data";
 
@@ -44,7 +48,8 @@ export const TiltifyEventSource: EventSource = {
         {
             id: TILTIFY_MILESTONE_EVENT_ID,
             name: "Milestone Reached",
-            description: "When a Milestone of your Tiltify campaign has been reached.",
+            description:
+                "When a Milestone of your Tiltify campaign has been reached.",
             cached: false,
             manualMetadata: {
                 id: "",
