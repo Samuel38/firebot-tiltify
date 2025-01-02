@@ -10,12 +10,12 @@ export const RewardFilter: EventFilter = {
     name: "Tiltify Reward",
     description: "Filter by the Tiltify reward.",
     events: [
-        { eventSourceId: TILTIFY_EVENT_SOURCE_ID, eventId: TILTIFY_DONATION_EVENT_ID }
+        {
+            eventSourceId: TILTIFY_EVENT_SOURCE_ID,
+            eventId: TILTIFY_DONATION_EVENT_ID
+        }
     ],
-    comparisonTypes: [
-        "is",
-        "is not"
-    ],
+    comparisonTypes: ["is", "is not"],
     valueType: "preset",
     predicate: (filterSettings, eventData) => {
         const rewardId = eventData.eventMeta.rewardId;
@@ -33,7 +33,11 @@ export const RewardFilter: EventFilter = {
         }
     },
     presetValues: async (backendCommunicator) => {
-        return (await backendCommunicator.fireEventAsync("get-tiltify-rewards"))
-            .map((r: TiltifyCampaignReward) => ({value: r.id, display: r.name}));
+        return (
+            await backendCommunicator.fireEventAsync("get-tiltify-rewards")
+        ).map((r: TiltifyCampaignReward) => ({
+            value: r.id,
+            display: r.name
+        }));
     }
 };

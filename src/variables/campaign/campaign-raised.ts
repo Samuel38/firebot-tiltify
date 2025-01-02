@@ -10,18 +10,20 @@ import { TiltifyCampaignEventData } from "@/events/campaign-event-data";
 export const TiltifyCampaignRaisedVariable: ReplaceVariable = {
     definition: {
         handle: "tiltifyCampaignRaised",
-        description: "The amount of money raised by the Tiltify campaign related to the event",
+        description:
+            "The amount of money raised by the Tiltify campaign related to the event",
         triggers: {
-            "event": [
+            event: [
                 `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`,
                 `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_MILESTONE_EVENT_ID}`
             ],
-            "manual": true
+            manual: true
         },
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        const eventData: TiltifyCampaignEventData = trigger.metadata?.eventData as TiltifyCampaignEventData;
+        const eventData: TiltifyCampaignEventData = trigger.metadata
+            ?.eventData as TiltifyCampaignEventData;
         return eventData?.campaignInfo?.amountRaised ?? 0;
     }
 };

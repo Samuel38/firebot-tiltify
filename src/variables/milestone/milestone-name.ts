@@ -11,15 +11,14 @@ export const TiltifyMilestoneNameVariable: ReplaceVariable = {
         handle: "tiltifyMilestoneName",
         description: "The name of the Tiltify Milestone reached",
         triggers: {
-            "event": [
-                `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_MILESTONE_EVENT_ID}`
-            ],
-            "manual": true
+            event: [`${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_MILESTONE_EVENT_ID}`],
+            manual: true
         },
         possibleDataOutput: [OutputDataType.TEXT]
     },
     evaluator: function (trigger): string {
-        const eventData: TiltifyMilestoneReachedEventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
+        const eventData: TiltifyMilestoneReachedEventData = trigger.metadata
+            ?.eventData as TiltifyMilestoneReachedEventData;
         return eventData?.name ?? "Unknown";
     }
 };

@@ -14,10 +14,10 @@ test("run() calls logger.info with the message", async () => {
     ArgumentsOf<ScriptModules["logger"]["info"]>
     >();
     const expectedMessage = "foobar";
-    const runRequest = ({
+    const runRequest = {
         parameters: { message: expectedMessage },
         modules: { logger: { info: mockInfoLog } }
-    } as unknown) as RunRequest<any>;
+    } as unknown as RunRequest<any>;
 
     await customScript.run(runRequest);
 

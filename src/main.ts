@@ -28,9 +28,8 @@ const script: Firebot.CustomScript = {
             startupOnly: true
         };
     },
-    getDefaultParameters: () => ({ }),
+    getDefaultParameters: () => ({}),
     run: ({ modules }) => {
-
         // Setup globals
         initModules(modules);
 

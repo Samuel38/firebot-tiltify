@@ -11,15 +11,14 @@ export const TiltifyDonationFromVariable: ReplaceVariable = {
         handle: "tiltifyDonationFrom",
         description: "The name of who sent a Tiltify donation",
         triggers: {
-            "event": [
-                `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`
-            ],
-            "manual": true
+            event: [`${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`],
+            manual: true
         },
         possibleDataOutput: [OutputDataType.TEXT]
     },
     evaluator: function (trigger): string {
-        const eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        const eventData: TiltifyDonationEventData = trigger.metadata
+            ?.eventData as TiltifyDonationEventData;
         return eventData?.from ?? "Unknown User";
     }
 };

@@ -4,5 +4,5 @@ export type TiltifyPollOption = {
 };
 
 export type TiltifyPoll = {
-    options: TiltifyPollOption[]
+    options: TiltifyPollOption[];
 };
