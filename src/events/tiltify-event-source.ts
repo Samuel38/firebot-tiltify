@@ -48,7 +48,8 @@ export const TiltifyEventSource: EventSource = {
         {
             id: TILTIFY_MILESTONE_EVENT_ID,
             name: "Milestone Reached",
-            description: "When a Milestone of your Tiltify campaign has been reached.",
+            description:
+                "When a Milestone of your Tiltify campaign has been reached.",
             cached: false,
             manualMetadata: {
                 id: "",

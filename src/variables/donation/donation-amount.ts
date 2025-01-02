@@ -11,15 +11,14 @@ export const TiltifyDonationAmountVariable: ReplaceVariable = {
         handle: "tiltifyDonationAmount",
         description: "The amount of a donation from Tiltify",
         triggers: {
-            "event": [
-                `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`
-            ],
-            "manual": true
+            event: [`${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_DONATION_EVENT_ID}`],
+            manual: true
         },
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        const eventData: TiltifyDonationEventData = trigger.metadata?.eventData as TiltifyDonationEventData;
+        const eventData: TiltifyDonationEventData = trigger.metadata
+            ?.eventData as TiltifyDonationEventData;
         return eventData?.donationAmount ?? 0;
     }
 };

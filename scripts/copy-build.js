@@ -20,24 +20,20 @@ const getFirebotScriptsFolderPath = () => {
             "/Library/Application Support"
         );
     } else if (process.platform === "linux") {
-        appDataFolderPath = path.join(
-            process.env.HOME,
-            "/.config"
-        );
+        appDataFolderPath = path.join(process.env.HOME, "/.config");
     } else {
         throw new Error("Unsupported OS!");
     }
 
     const firebotDataFolderPath = path.join(appDataFolderPath, "/Firebot/v5/");
-    const firebotGlobalSettings = require(path.join(
-        firebotDataFolderPath,
-        "global-settings.json"
-    ));
+    const firebotGlobalSettings = require(
+        path.join(firebotDataFolderPath, "global-settings.json")
+    );
 
     if (
         firebotGlobalSettings == null ||
-    firebotGlobalSettings.profiles == null ||
-    firebotGlobalSettings.profiles.loggedInProfile == null
+        firebotGlobalSettings.profiles == null ||
+        firebotGlobalSettings.profiles.loggedInProfile == null
     ) {
         throw new Error("Unable to determine active profile");
     }

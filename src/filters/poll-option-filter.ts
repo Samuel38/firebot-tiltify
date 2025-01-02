@@ -10,12 +10,12 @@ export const PollOptionFilter: EventFilter = {
     name: "Tiltify Poll Option",
     description: "Filter by the Tiltify poll option.",
     events: [
-        { eventSourceId: TILTIFY_EVENT_SOURCE_ID, eventId: TILTIFY_DONATION_EVENT_ID }
+        {
+            eventSourceId: TILTIFY_EVENT_SOURCE_ID,
+            eventId: TILTIFY_DONATION_EVENT_ID
+        }
     ],
-    comparisonTypes: [
-        "is",
-        "is not"
-    ],
+    comparisonTypes: ["is", "is not"],
     valueType: "preset",
     predicate: (filterSettings, eventData) => {
         const pollOptionId = eventData.eventMeta.pollOptionId;
@@ -33,7 +33,11 @@ export const PollOptionFilter: EventFilter = {
         }
     },
     presetValues: async (backendCommunicator) => {
-        return (await backendCommunicator.fireEventAsync("get-tiltify-poll-options"))
-            .map((r: TiltifyPollOption) => ({value: r.id, display: r.name}));
+        return (
+            await backendCommunicator.fireEventAsync("get-tiltify-poll-options")
+        ).map((r: TiltifyPollOption) => ({
+            value: r.id,
+            display: r.name
+        }));
     }
 };

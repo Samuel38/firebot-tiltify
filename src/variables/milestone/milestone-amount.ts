@@ -11,15 +11,14 @@ export const TiltifyMilestoneAmountVariable: ReplaceVariable = {
         handle: "tiltifyMilestoneAmount",
         description: "The amount connected to reach the Tiltify Milestone",
         triggers: {
-            "event": [
-                `${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_MILESTONE_EVENT_ID}`
-            ],
-            "manual": true
+            event: [`${TILTIFY_EVENT_SOURCE_ID}:${TILTIFY_MILESTONE_EVENT_ID}`],
+            manual: true
         },
         possibleDataOutput: [OutputDataType.NUMBER]
     },
     evaluator: function (trigger): number {
-        const eventData: TiltifyMilestoneReachedEventData = trigger.metadata?.eventData as TiltifyMilestoneReachedEventData;
+        const eventData: TiltifyMilestoneReachedEventData = trigger.metadata
+            ?.eventData as TiltifyMilestoneReachedEventData;
         return eventData?.amount ?? 0;
     }
 };

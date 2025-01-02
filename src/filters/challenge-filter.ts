@@ -10,12 +10,12 @@ export const ChallengeFilter: EventFilter = {
     name: "Tiltify Challenge/Target",
     description: "Filter by the Tiltify challenge/target.",
     events: [
-        { eventSourceId: TILTIFY_EVENT_SOURCE_ID, eventId: TILTIFY_DONATION_EVENT_ID }
+        {
+            eventSourceId: TILTIFY_EVENT_SOURCE_ID,
+            eventId: TILTIFY_DONATION_EVENT_ID
+        }
     ],
-    comparisonTypes: [
-        "is",
-        "is not"
-    ],
+    comparisonTypes: ["is", "is not"],
     valueType: "preset",
     predicate: (filterSettings, eventData) => {
         const challengeId = eventData?.eventMeta?.challengeId;
@@ -33,7 +33,11 @@ export const ChallengeFilter: EventFilter = {
         }
     },
     presetValues: async (backendCommunicator) => {
-        return (await backendCommunicator.fireEventAsync("get-tiltify-challenges"))
-            .map((r: TiltifyTarget) => ({value: r.id, display: r.name}));
+        return (
+            await backendCommunicator.fireEventAsync("get-tiltify-challenges")
+        ).map((r: TiltifyTarget) => ({
+            value: r.id,
+            display: r.name
+        }));
     }
 };

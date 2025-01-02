@@ -4,7 +4,6 @@ about: Create a report to help us improve
 title: "[Bug] "
 labels: bug
 assignees: Samuel38
-
 ---
 
 **Describe the bug**
@@ -20,8 +19,9 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Version:**
-- Firebot version: 
-- Tiltify integration version: 
+
+- Firebot version:
+- Tiltify integration version:
 
 **Additional context**
 Add any other context about the problem here.
